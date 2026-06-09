@@ -1,13 +1,21 @@
 # Record Payment
 
-Welcome to the **Record Payment** section of the Garrison Honors Center Operations Manual.
+Use this SOP to record self-pay or program-authorized membership fees in Access.
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
+## Process
 
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+1. Confirm the fee was paid in OCC Tickets or authorized by a billable program.
+2. Open the student's Access record.
+3. Open the correct society membership card.
+4. Enter the payment date and amount in the current processing semester field.
+5. If program billed, note the program and authorization status according to office practice.
+6. Save the record.
+7. Keep the receipt or billing authorization traceable in Outlook, Google Drive, or the shared billing spreadsheet.
+
+## Notes
+
+- Payment fields should match the processing semester.
+- Do not mark payment complete if billing authorization is still pending.
 
 ---
 *Last updated: June 2026*

@@ -1,13 +1,18 @@
 # Close Out Purchase Orders
 
-Welcome to the **Close Out Purchase Orders** section of the Garrison Honors Center Operations Manual.
+Use this SOP during year-end financial closeout or when a purchase order is complete.
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
+## Process
 
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+1. Review open purchase orders.
+2. Confirm goods or services were received.
+3. Confirm invoices were submitted and paid.
+4. If no further purchasing is expected, notify the Bursar's Office that the purchase order can close.
+5. Save closeout confirmation with financial records.
+
+## Year-End Standard
+
+All purchase orders should either be closed or documented with a reason they remain open.
 
 ---
 *Last updated: June 2026*

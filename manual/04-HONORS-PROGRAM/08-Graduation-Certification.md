@@ -1,13 +1,8 @@
 # Graduation Certification
 
-Welcome to the **Graduation Certification** section of the Garrison Honors Center Operations Manual.
+**(Work in progress)**
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
-
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+This section is a placeholder until the exact GHC procedure, owner, source system, and current approval path are confirmed.
 
 ---
 *Last updated: June 2026*

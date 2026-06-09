@@ -1,13 +1,31 @@
 # Society Codes
 
-Welcome to the **Society Codes** section of the Garrison Honors Center Operations Manual.
+Use these abbreviations in Outlook folders, Access notes, spreadsheets, and process references when they match local office practice.
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
+| Abbreviation | Organization |
+| --- | --- |
+| ABG | Alpha Beta Gamma |
+| AGS | Alpha Gamma Sigma |
+| AMG | Alpha Mu Gamma |
+| EEO | Eta Eta Omicron |
+| IX | Iota Xi |
+| MAT | Mu Alpha Theta |
+| MDR | Mu Delta Rho |
+| NTHS | National Technical Honor Society |
+| OPS | Omega Psi Sigma |
+| PAM | Phi Alpha Mu |
+| PTK | Phi Theta Kappa |
+| PRS | Pi Rho Sigma |
+| PTE | Pi Tau Epsilon |
+| PSI | Psi Beta |
+| SALUTE | SALUTE |
+| SCE | Sigma Chi Eta |
+| SKD | Sigma Kappa Delta |
 
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+## Use Notes
+
+- Folder abbreviations should be clear enough for another staff member to identify the society quickly.
+- Banner transcript notation codes are different from office abbreviations. See Transcript Notation Codes.
 
 ---
 *Last updated: June 2026*

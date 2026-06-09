@@ -1,13 +1,20 @@
 # Record Welcome Letter
 
-Welcome to the **Record Welcome Letter** section of the Garrison Honors Center Operations Manual.
+Welcome letter records confirm that the student was notified after membership processing.
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
+## Process
 
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+1. Confirm the student's application, eligibility, and payment or billing status are complete.
+2. Open the student's Access record.
+3. Open the correct society or Honors Program card.
+4. Use the current semester welcome letter field.
+5. Send the letter.
+6. Confirm the date is recorded in Access.
+7. Save the record.
+
+## Template Check
+
+Before sending, confirm the template includes current semester dates, correct society or program information, and updated advisor or president details when applicable.
 
 ---
 *Last updated: June 2026*

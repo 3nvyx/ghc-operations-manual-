@@ -1,13 +1,28 @@
 # Transcript Notation Codes
 
-Welcome to the **Transcript Notation Codes** section of the Garrison Honors Center Operations Manual.
+Use these Banner notation codes when adding honor society notations in SHATCMT. Confirm current Banner values before entering a notation.
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
+| Code | Organization |
+| --- | --- |
+| 1AB | Alpha Beta Gamma |
+| 1AG | Alpha Gamma Sigma |
+| 1AM | Alpha Mu Gamma |
+| 1EO | Eta Eta Omicron |
+| 1IO | Iota Xi |
+| 1MA | Mu Alpha Theta |
+| 1MD | Mu Delta Rho |
+| 1NT | National Technical |
+| 1OP | Omega Psi Sigma |
+| 1PA | Phi Alpha Mu |
+| 1PT | Phi Theta Kappa |
+| 1PR | Pi Rho Sigma |
+| 1PE | Pi Tau Epsilon |
 
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+## Use Notes
+
+- Verify existing notations before inserting a new one.
+- Use the membership start date as the effective date when adding a society notation.
+- Record the notation date in Access after saving in Banner.
 
 ---
 *Last updated: June 2026*

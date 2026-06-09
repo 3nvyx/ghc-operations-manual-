@@ -1,13 +1,20 @@
 # Process Reimbursement
 
-Welcome to the **Process Reimbursement** section of the Garrison Honors Center Operations Manual.
+Use this SOP when an approved person paid an allowable expense personally and needs reimbursement.
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
+## Process
 
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+1. Confirm the expense was approved and allowable.
+2. Collect receipts and required documentation.
+3. Complete the reimbursement request.
+4. Route for payment authorization.
+5. Forward for processing.
+6. Track payment status.
+7. Save reimbursement documentation with the finance records.
+
+## Travel Note
+
+Travel reimbursements should connect back to the approved travel request, event, or conference documentation.
 
 ---
 *Last updated: June 2026*

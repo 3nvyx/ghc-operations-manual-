@@ -3,10 +3,9 @@
 import * as React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { 
   Folder, FolderOpen, FileText, ChevronDown, ChevronRight, 
-  Search, Plus, Bird
+  Search, Bird
 } from "lucide-react";
 
 export interface FileNode {
@@ -27,7 +26,6 @@ export function DocumentSidebar({
   tree,
   activeFilePath,
   onSelectFile,
-  onNewFile,
 }: DocumentSidebarProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [expandedPaths, setExpandedPaths] = React.useState<Record<string, boolean>>({
@@ -52,8 +50,31 @@ export function DocumentSidebar({
       .replace(/-/g, " ");
   };
 
-  // Filter tree recursively
-  const filterTree = (nodes: FileNode[], query: string): FileNode[] => {
+  const expandParentFolders = (filePath: string) => {
+    const folderParts = filePath.split("/").slice(0, -1);
+    if (folderParts.length === 0) return;
+
+    setExpandedPaths((prev) => {
+      const next = { ...prev };
+      let currentPath = "";
+
+      for (const part of folderParts) {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        next[currentPath] = true;
+      }
+
+      return next;
+    });
+  };
+
+  const handleSelectFile = (filePath: string) => {
+    expandParentFolders(filePath);
+    onSelectFile(filePath);
+  };
+
+  const filteredTree = React.useMemo(() => {
+    // Filter tree recursively
+    const filterTree = (nodes: FileNode[], query: string): FileNode[] => {
     if (!query) return nodes;
     
     return nodes
@@ -67,9 +88,6 @@ export function DocumentSidebar({
         const nameMatches = node.name.toLowerCase().includes(query.toLowerCase());
 
         if (filteredChildren.length > 0 || nameMatches) {
-          if (expandedPaths[node.path] !== true) {
-            expandedPaths[node.path] = true;
-          }
           return {
             ...node,
             children: filteredChildren.length > 0 ? filteredChildren : node.children,
@@ -79,9 +97,8 @@ export function DocumentSidebar({
         return null;
       })
       .filter((node): node is FileNode => node !== null);
-  };
+    };
 
-  const filteredTree = React.useMemo(() => {
     return filterTree(tree, searchQuery);
   }, [tree, searchQuery]);
 
@@ -89,7 +106,7 @@ export function DocumentSidebar({
   const renderTreeNodes = (nodes: FileNode[], level = 0) => {
     return nodes.map((node) => {
       const isDirectory = node.type === "directory";
-      const isExpanded = !!expandedPaths[node.path];
+      const isExpanded = searchQuery ? true : !!expandedPaths[node.path];
       const isActive = node.path === activeFilePath;
 
       if (isDirectory) {
@@ -121,7 +138,8 @@ export function DocumentSidebar({
       return (
         <button
           key={node.path}
-          onClick={() => onSelectFile(node.path)}
+          onClick={() => handleSelectFile(node.path)}
+          aria-current={isActive ? "location" : undefined}
           style={{ paddingLeft: `${level * 12 + 24}px` }}
           className={`w-full flex items-center gap-2 py-1.5 px-3 text-xs rounded-lg cursor-pointer text-left select-none transition-all ${
             isActive
@@ -137,7 +155,7 @@ export function DocumentSidebar({
   };
 
   return (
-    <aside className="w-64 flex flex-col h-full bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-zinc-805 dark:text-zinc-200 shrink-0 select-none">
+    <aside className="w-64 flex min-h-0 flex-col h-full overflow-hidden bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-zinc-805 dark:text-zinc-200 shrink-0 select-none">
       
       {/* Sidebar Header */}
       <div className="p-4 flex items-center justify-between border-b border-zinc-200/50 dark:border-zinc-850 shrink-0">
@@ -165,7 +183,7 @@ export function DocumentSidebar({
       </div>
 
       {/* Directory Tree Scroll */}
-      <ScrollArea className="flex-1 px-2 mb-2 scrollbar-thin">
+      <ScrollArea className="min-h-0 flex-1 px-2 mb-2 scrollbar-thin">
         <div className="space-y-1 pr-1.5">
           {filteredTree.length === 0 ? (
             <div className="text-center py-12 text-xs text-zinc-400 dark:text-zinc-500 font-medium">

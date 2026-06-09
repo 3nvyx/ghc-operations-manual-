@@ -1,13 +1,24 @@
 # Common Acronyms
 
-Welcome to the **Common Acronyms** section of the Garrison Honors Center Operations Manual.
+| Acronym | Meaning |
+| --- | --- |
+| ASOCC | Associated Students of Orange Coast College |
+| BOT | Board of Trustees |
+| GEC | Global Engagement Center |
+| GHC | Garrison Honors Center |
+| HP | Honors Program |
+| HTCC | Honors Transfer Council of California |
+| IE or OIE | Institutional Effectiveness or Office of Institutional Effectiveness |
+| NCHC | National Collegiate Honors Council |
+| OCC | Orange Coast College |
+| POR | Purchase Order Request |
+| PTK | Phi Theta Kappa |
+| TAP | Transfer Alliance Program |
+| WRHC | Western Regional Honors Council |
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
+## Notes
 
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+Some abbreviations overlap with society codes or program names. When communicating with students, spell out names unless the abbreviation is widely understood.
 
 ---
 *Last updated: June 2026*

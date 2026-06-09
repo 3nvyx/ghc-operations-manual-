@@ -1,13 +1,21 @@
 # Shared Spreadsheets
 
-Welcome to the **Shared Spreadsheets** section of the Garrison Honors Center Operations Manual.
+Shared Google spreadsheets are used for billing authorization, transcript review tracking, and other semester records.
 
-## Protocol & Summary
-Please outline the standard operating procedures, roles, and systems involved.
+## Program Billing Spreadsheet
 
-1. **Prerequisite:** Confirm all systems are online.
-2. **Action Item:** Complete the form inputs.
-3. **Completion:** Log results.
+Maintain a shared spreadsheet for the academic year or semester with each program contact. Include student identifiers, membership fees, regalia amounts when applicable, and authorization status.
+
+## Transcript Review Spreadsheets
+
+Use transcript review workbooks to document eligibility decisions, qualifying units, GPA, and notes.
+
+## Spreadsheet Standards
+
+- Keep one source of truth for each semester or process.
+- Use consistent student ID, name, email, society, level, amount, and status fields.
+- Do not rely on informal email threads when a shared tracking sheet is required.
+- Preserve raw data files from OIE before filtering or editing.
 
 ---
 *Last updated: June 2026*

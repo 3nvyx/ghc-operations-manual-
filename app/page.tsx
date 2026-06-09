@@ -2,33 +2,48 @@
 
 import * as React from "react";
 import { DocumentSidebar, FileNode } from "@/components/document-sidebar";
-import { Editor } from "@/components/editor";
+import { Editor, ManualSection } from "@/components/editor";
 import { Button } from "@/components/ui/button";
 import { markdownToHtml } from "@/lib/markdown";
 import { 
-  Menu, Share2, Sun, Moon, Check, Cloud
+  Menu, Share2, Sun, Moon, Check
 } from "lucide-react";
+
+function formatFileTitle(filePath: string) {
+  if (!filePath) return "No section selected";
+  const parts = filePath.split("/");
+  const filename = parts[parts.length - 1];
+  return filename
+    .replace(/\.md$/, "")
+    .replace(/^SOP-\d+-/, "")
+    .replace(/^\d+-/, "")
+    .replace(/-/g, " ");
+}
+
+function getSectionId(filePath: string) {
+  return `manual-section-${filePath.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+function flattenFiles(nodes: FileNode[]): FileNode[] {
+  return nodes.flatMap((node) => {
+    if (node.type === "file") return [node];
+    return flattenFiles(node.children || []);
+  });
+}
 
 export default function Home() {
   const [tree, setTree] = React.useState<FileNode[]>([]);
   const [activeFilePath, setActiveFilePath] = React.useState("");
-  const [fileContent, setFileContent] = React.useState("");
-  const [editorInstance, setEditorInstance] = React.useState<any>(null);
+  const [sections, setSections] = React.useState<ManualSection[]>([]);
+  const [isLoadingManual, setIsLoadingManual] = React.useState(true);
   
   // UI States
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
-  const [theme, setTheme] = React.useState<"light" | "dark">("light");
+  const [theme, setTheme] = React.useState<"light" | "dark">(() => {
+    if (typeof document === "undefined") return "light";
+    return document.documentElement.classList.contains("dark") ? "dark" : "light";
+  });
   const [copied, setCopied] = React.useState(false);
-
-  // Sync initial theme
-  React.useEffect(() => {
-    const root = window.document.documentElement;
-    if (root.classList.contains("dark")) {
-      setTheme("dark");
-    } else {
-      setTheme("light");
-    }
-  }, []);
 
   const handleToggleTheme = () => {
     const root = window.document.documentElement;
@@ -38,80 +53,66 @@ export default function Home() {
     setTheme(nextTheme);
   };
 
-  // Find first file in nested tree structure recursively
-  const findFirstFile = (nodes: FileNode[]): FileNode | null => {
-    for (const node of nodes) {
-      if (node.type === "file") return node;
-      if (node.children) {
-        const found = findFirstFile(node.children);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  // Fetch file tree from API on mount
-  const fetchTree = async (selectDefault = false) => {
-    try {
-      const res = await fetch("/api/files");
-      const data = await res.json();
-      if (data.tree) {
-        setTree(data.tree);
-        
-        // Select the first markdown file by default if none is active
-        if (selectDefault || !activeFilePath) {
-          const first = findFirstFile(data.tree);
-          if (first) {
-            setActiveFilePath(first.path);
-          }
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load directory tree", e);
-    }
-  };
-
   React.useEffect(() => {
-    fetchTree(true);
+    let isCurrent = true;
+
+    fetch("/api/files")
+      .then((res) => res.json())
+      .then(async (data) => {
+        if (!data.tree) return;
+
+        const files = flattenFiles(data.tree);
+        const manualSections = await Promise.all(
+          files.map(async (file) => {
+            const contentRes = await fetch(`/api/files?path=${encodeURIComponent(file.path)}`);
+            const contentData = await contentRes.json();
+
+            return {
+              path: file.path,
+              title: formatFileTitle(file.path),
+              html: markdownToHtml(contentData.content || ""),
+            };
+          })
+        );
+
+        if (!isCurrent) return;
+
+        setTree(data.tree);
+        setSections(manualSections);
+        if (files[0]) {
+          setActiveFilePath(files[0].path);
+        }
+      })
+      .catch((e) => {
+        console.error("Failed to load manual", e);
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setIsLoadingManual(false);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
   }, []);
 
-  // Fetch active file content
-  React.useEffect(() => {
-    if (!activeFilePath) return;
-
-    const fetchContent = async () => {
-      try {
-        const res = await fetch(`/api/files?path=${encodeURIComponent(activeFilePath)}`);
-        const data = await res.json();
-        if (data.content !== undefined) {
-          // Convert Markdown to HTML for TipTap Editor
-          const html = markdownToHtml(data.content);
-          setFileContent(html);
-        }
-      } catch (e) {
-        console.error("Failed to fetch file content", e);
-      }
-    };
-
-    fetchContent();
-  }, [activeFilePath]);
-
   const handleShareLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    const sectionUrl = activeFilePath
+      ? `${window.location.origin}${window.location.pathname}#${getSectionId(activeFilePath)}`
+      : window.location.href;
+
+    navigator.clipboard.writeText(sectionUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Format active path for title display (e.g. "02-SOPS/Billing/SOP-24-Bill-EOPS.md" -> "Bill Eops")
-  const formatActiveTitle = (filePath: string) => {
-    if (!filePath) return "No File Selected";
-    const parts = filePath.split("/");
-    const filename = parts[parts.length - 1];
-    return filename
-      .replace(/\.md$/, "")
-      .replace(/^SOP-\d+-/, "")
-      .replace(/^\d+-/, "")
-      .replace(/-/g, " ");
+  const handleSelectFile = (filePath: string) => {
+    setActiveFilePath(filePath);
+    document.getElementById(getSectionId(filePath))?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   return (
@@ -122,7 +123,7 @@ export default function Home() {
         <DocumentSidebar
           tree={tree}
           activeFilePath={activeFilePath}
-          onSelectFile={setActiveFilePath}
+          onSelectFile={handleSelectFile}
           onNewFile={() => {}}
         />
       )}
@@ -147,7 +148,7 @@ export default function Home() {
             
             {/* Active section title */}
             <span className="text-xs font-semibold text-zinc-850 dark:text-white capitalize ml-1">
-              {formatActiveTitle(activeFilePath)}
+              {formatFileTitle(activeFilePath)}
             </span>
           </div>
 
@@ -180,15 +181,16 @@ export default function Home() {
         {/* Triple column document area */}
         <div className="flex-1 flex overflow-hidden relative">
           {/* Borderless Editor Canvas */}
-          {activeFilePath ? (
+          {isLoadingManual || sections.length > 0 ? (
             <Editor
-              content={fileContent}
-              onChange={() => {}}
-              onEditorReady={setEditorInstance}
+              sections={sections}
+              activeFilePath={activeFilePath}
+              isLoading={isLoadingManual}
+              onActiveSectionChange={setActiveFilePath}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-xs">
-              Select a section file in the sidebar to begin editing the manual.
+              No manual sections found.
             </div>
           )}
         </div>
