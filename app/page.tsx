@@ -1,65 +1,198 @@
-import Image from "next/image";
+"use client";
+
+import * as React from "react";
+import { DocumentSidebar, FileNode } from "@/components/document-sidebar";
+import { Editor } from "@/components/editor";
+import { Button } from "@/components/ui/button";
+import { markdownToHtml } from "@/lib/markdown";
+import { 
+  Menu, Share2, Sun, Moon, Check, Cloud
+} from "lucide-react";
 
 export default function Home() {
+  const [tree, setTree] = React.useState<FileNode[]>([]);
+  const [activeFilePath, setActiveFilePath] = React.useState("");
+  const [fileContent, setFileContent] = React.useState("");
+  const [editorInstance, setEditorInstance] = React.useState<any>(null);
+  
+  // UI States
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const [theme, setTheme] = React.useState<"light" | "dark">("light");
+  const [copied, setCopied] = React.useState(false);
+
+  // Sync initial theme
+  React.useEffect(() => {
+    const root = window.document.documentElement;
+    if (root.classList.contains("dark")) {
+      setTheme("dark");
+    } else {
+      setTheme("light");
+    }
+  }, []);
+
+  const handleToggleTheme = () => {
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    root.classList.add(nextTheme);
+    setTheme(nextTheme);
+  };
+
+  // Find first file in nested tree structure recursively
+  const findFirstFile = (nodes: FileNode[]): FileNode | null => {
+    for (const node of nodes) {
+      if (node.type === "file") return node;
+      if (node.children) {
+        const found = findFirstFile(node.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Fetch file tree from API on mount
+  const fetchTree = async (selectDefault = false) => {
+    try {
+      const res = await fetch("/api/files");
+      const data = await res.json();
+      if (data.tree) {
+        setTree(data.tree);
+        
+        // Select the first markdown file by default if none is active
+        if (selectDefault || !activeFilePath) {
+          const first = findFirstFile(data.tree);
+          if (first) {
+            setActiveFilePath(first.path);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load directory tree", e);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchTree(true);
+  }, []);
+
+  // Fetch active file content
+  React.useEffect(() => {
+    if (!activeFilePath) return;
+
+    const fetchContent = async () => {
+      try {
+        const res = await fetch(`/api/files?path=${encodeURIComponent(activeFilePath)}`);
+        const data = await res.json();
+        if (data.content !== undefined) {
+          // Convert Markdown to HTML for TipTap Editor
+          const html = markdownToHtml(data.content);
+          setFileContent(html);
+        }
+      } catch (e) {
+        console.error("Failed to fetch file content", e);
+      }
+    };
+
+    fetchContent();
+  }, [activeFilePath]);
+
+  const handleShareLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Format active path for title display (e.g. "02-SOPS/Billing/SOP-24-Bill-EOPS.md" -> "Bill Eops")
+  const formatActiveTitle = (filePath: string) => {
+    if (!filePath) return "No File Selected";
+    const parts = filePath.split("/");
+    const filename = parts[parts.length - 1];
+    return filename
+      .replace(/\.md$/, "")
+      .replace(/^SOP-\d+-/, "")
+      .replace(/^\d+-/, "")
+      .replace(/-/g, " ");
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex h-screen w-screen bg-white dark:bg-zinc-950 overflow-hidden font-sans select-none">
+      
+      {/* Collapsible Directory Sidebar */}
+      {isSidebarOpen && (
+        <DocumentSidebar
+          tree={tree}
+          activeFilePath={activeFilePath}
+          onSelectFile={setActiveFilePath}
+          onNewFile={() => {}}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+      )}
+
+      {/* Main Content Pane */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-zinc-950">
+        
+        {/* Apple Notes style toolbar header */}
+        <header className="h-12 border-b border-zinc-200/60 dark:border-zinc-800/60 px-4 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/30 shrink-0">
+          
+          {/* Left Operations */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="cursor-pointer text-zinc-600 dark:text-zinc-400"
+              title="Toggle Sidebar"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <Menu className="w-4.5 h-4.5" />
+            </Button>
+            
+            {/* Active section title */}
+            <span className="text-xs font-semibold text-zinc-850 dark:text-white capitalize ml-1">
+              {formatActiveTitle(activeFilePath)}
+            </span>
+          </div>
+
+          {/* Right Operations */}
+          <div className="flex items-center gap-1">
+            {/* Dark mode */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleToggleTheme}
+              className="cursor-pointer text-zinc-650 dark:text-zinc-400"
+              title={theme === "dark" ? "Light Mode" : "Dark Mode"}
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              {theme === "dark" ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+            </Button>
+
+            {/* Note link copy */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleShareLink}
+              className="cursor-pointer text-zinc-600 dark:text-zinc-400"
+              title="Copy Section Path"
+            >
+              {copied ? <Check className="w-4.5 h-4.5 text-emerald-500" /> : <Share2 className="w-4.5 h-4.5" />}
+            </Button>
+          </div>
+        </header>
+
+        {/* Triple column document area */}
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* Borderless Editor Canvas */}
+          {activeFilePath ? (
+            <Editor
+              content={fileContent}
+              onChange={() => {}}
+              onEditorReady={setEditorInstance}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-xs">
+              Select a section file in the sidebar to begin editing the manual.
+            </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

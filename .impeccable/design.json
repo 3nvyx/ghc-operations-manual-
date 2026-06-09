@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-08T23:19:20.000Z",
+  "title": "Design System: GHC Operations Manual Editor",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Warm Amber",
+        "canonical": "oklch(76.7% 0.197 78.4)",
+        "tonalRamp": [
+          "#78350f",
+          "#92400e",
+          "#b45309",
+          "#d97706",
+          "#f59e0b",
+          "#fbbf24",
+          "#fcd34d",
+          "#fef3c7"
+        ]
+      },
+      "neutral-bg": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#09090b",
+          "#18181b",
+          "#27272a",
+          "#52525b",
+          "#a1a1aa",
+          "#e4e4e7",
+          "#f4f4f5",
+          "#ffffff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display (H1)",
+        "purpose": "Main document title headings only."
+      },
+      "body": {
+        "displayName": "Body Text",
+        "purpose": "Standard paragraphs and operational SOP text."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out-quint",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Smooth fade transitions for panel toggles."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Sidebar Item Active",
+      "kind": "chip",
+      "refersTo": "sidebar-item-active",
+      "description": "Selected state item in file explorer sidebar.",
+      "html": "<button class=\"ds-sidebar-item ds-active\">02 Billing Section</button>",
+      "css": ".ds-sidebar-item { display: flex; align-items: center; width: 100%; border: none; padding: 6px 12px; font-family: var(--font-sans), sans-serif; font-size: 12px; font-weight: 500; border-radius: 8px; text-align: left; background: transparent; color: #4b5563; cursor: pointer; transition: background 0.15s ease, color 0.15s ease; } .ds-sidebar-item.ds-active { background: rgba(245, 158, 11, 0.1); color: #b45309; font-weight: 600; }"
+    },
+    {
+      "name": "Minimal Toolbar Button",
+      "kind": "button",
+      "refersTo": "toolbar-button",
+      "description": "Flat header action button.",
+      "html": "<button class=\"ds-btn-tool\">Aa</button>",
+      "css": ".ds-btn-tool { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: transparent; color: #4b5563; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.15s ease; } .ds-btn-tool:hover { background: rgba(0, 0, 0, 0.05); color: #1f2937; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Apple Stationery",
+    "overview": "The Garrison Honors Center visual system is designed to mimic a clean physical notepad—combining borderless writing surfaces, subtle hairline borders, and warm amber accents. This system prioritizes speed, high-density reading, and content clarity, ensuring that staff can navigate and update Standard Operating Procedures (SOPs) without layout distractions.",
+    "keyCharacteristics": [
+      "Borderless Sheets: Document editors stretch to fill the screen viewport natively, eliminating artificial paper shadows.",
+      "Warm Amber Accent: Warm gold-amber selections are reserved strictly for active elements and folder states.",
+      "Hairline Dividers: Spacing and containment are defined by 1px dividers rather than filled background blocks."
+    ],
+    "rules": [
+      {
+        "name": "The Single Accent Rule",
+        "body": "Amber highlights must occupy less than 5% of any screen. If the accent is rare, it stays meaningful.",
+        "section": "colors"
+      },
+      {
+        "name": "The Zero Shadow Rule",
+        "body": "Floating shadow blurs are prohibited. Depth is conveyed strictly through borders (1px) and dark/light mode background tints.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do wrap long prose in text-wrap: pretty to prevent typographic orphans.",
+      "Do check contrast ratios for gray labels to ensure they meet the 4.5:1 readability standard.",
+      "Do keep headings aligned to the start of the borderless page."
+    ],
+    "donts": [
+      "Don't use side-stripe colored borders on alert cards or callout items.",
+      "Don't use gradient text or colored card background containers.",
+      "Don't exceed a border-radius of 10px on buttons, inputs, or sidebar panels."
+    ]
+  }
+}
