@@ -15,6 +15,17 @@ interface EditorProps {
   activeFilePath: string;
   isLoading: boolean;
   onActiveSectionChange: (filePath: string) => void;
+  onSaveSection: (section: { path: string; title: string; html: string }) => Promise<void>;
+}
+
+export interface EditorHandle {
+  setEditing: (isEditing: boolean) => void;
+  formatBold: () => void;
+  formatHeader: () => void;
+  formatBulletList: () => void;
+  undo: () => void;
+  redo: () => void;
+  cancelAutosave: (sectionPath?: string) => void;
 }
 
 interface ManualComment {
@@ -65,6 +76,22 @@ function stripDuplicateTitle(html: string, title: string) {
   return html.slice(headingMatch[0].length).trimStart();
 }
 
+function getTextFromHtml(html: string) {
+  if (typeof document === "undefined") {
+    return html.replace(/<[^>]+>/g, " ");
+  }
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  return template.content.textContent || "";
+}
+
+function getReadingMinutes(html: string, title: string) {
+  const visibleHtml = stripDuplicateTitle(html, title);
+  const wordCount = getTextFromHtml(visibleHtml).trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(wordCount / 220));
+}
+
 function getTextOffset(root: HTMLElement, node: Node, offset: number) {
   const range = document.createRange();
   range.selectNodeContents(root);
@@ -113,23 +140,134 @@ function loadStoredComments() {
   }
 }
 
-export function Editor({
+export const Editor = React.forwardRef<EditorHandle, EditorProps>(function Editor({
   sections,
   activeFilePath,
   isLoading,
   onActiveSectionChange,
-}: EditorProps) {
+  onSaveSection,
+}: EditorProps, ref) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const saveTimeoutsRef = React.useRef<Record<string, number>>({});
   const latestActivePath = React.useRef(activeFilePath);
   const [comments, setComments] = React.useState<ManualComment[]>(loadStoredComments);
   const [anchoredComments, setAnchoredComments] = React.useState<AnchoredComment[]>([]);
   const [pendingSelection, setPendingSelection] = React.useState<PendingSelection | null>(null);
   const [isComposingComment, setIsComposingComment] = React.useState(false);
   const [commentDraft, setCommentDraft] = React.useState("");
+  const [isDatabaseBacked, setIsDatabaseBacked] = React.useState(false);
+  const [isEditing, setIsEditing] = React.useState(true);
+
+  const getSectionEditElements = React.useCallback((sectionPath: string) => {
+    const sectionElement = document.getElementById(getSectionId(sectionPath));
+    const titleElement = sectionElement?.querySelector<HTMLElement>("[data-editable-title]");
+    const proseElement = sectionElement?.querySelector<HTMLElement>(".manual-prose");
+
+    if (!titleElement || !proseElement) return null;
+    return { titleElement, proseElement };
+  }, []);
+
+  const saveSection = React.useCallback(async (sectionPath: string) => {
+    const section = sections.find((manualSection) => manualSection.path === sectionPath);
+    if (!section) return;
+
+    const elements = getSectionEditElements(section.path);
+    if (!elements) return;
+
+    await onSaveSection({
+      path: section.path,
+      title: elements.titleElement.innerText.trim() || section.title,
+      html: elements.proseElement.innerHTML,
+    });
+  }, [getSectionEditElements, onSaveSection, sections]);
+
+  const scheduleAutosave = React.useCallback((sectionPath: string) => {
+    if (!isEditing) return;
+    const existingTimeout = saveTimeoutsRef.current[sectionPath];
+    if (existingTimeout) {
+      window.clearTimeout(existingTimeout);
+    }
+
+    saveTimeoutsRef.current[sectionPath] = window.setTimeout(() => {
+      delete saveTimeoutsRef.current[sectionPath];
+      void saveSection(sectionPath);
+    }, 900);
+  }, [isEditing, saveSection]);
+
+  const runFormatCommand = React.useCallback((command: string, value?: string) => {
+    setIsEditing(true);
+    document.execCommand(command, false, value);
+    scheduleAutosave(latestActivePath.current);
+  }, [scheduleAutosave]);
+
+  const handleEditorKeyDown = (event: React.KeyboardEvent<HTMLElement>, sectionPath: string) => {
+    const isUndo = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey;
+    const isRedo =
+      ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "y") ||
+      ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "z");
+
+    if (isUndo || isRedo) {
+      window.setTimeout(() => scheduleAutosave(sectionPath), 0);
+    }
+  };
+
+  const handleSectionFocus = React.useCallback((sectionPath: string) => {
+    latestActivePath.current = sectionPath;
+    onActiveSectionChange(sectionPath);
+  }, [onActiveSectionChange]);
+
+  const cancelAutosave = React.useCallback((sectionPath?: string) => {
+    if (sectionPath) {
+      const timeout = saveTimeoutsRef.current[sectionPath];
+      if (timeout) {
+        window.clearTimeout(timeout);
+        delete saveTimeoutsRef.current[sectionPath];
+      }
+      return;
+    }
+
+    for (const timeout of Object.values(saveTimeoutsRef.current)) {
+      window.clearTimeout(timeout);
+    }
+    saveTimeoutsRef.current = {};
+  }, []);
+
+  React.useImperativeHandle(ref, () => ({
+    setEditing: setIsEditing,
+    formatBold: () => runFormatCommand("bold"),
+    formatHeader: () => runFormatCommand("formatBlock", "h2"),
+    formatBulletList: () => runFormatCommand("insertUnorderedList"),
+    undo: () => runFormatCommand("undo"),
+    redo: () => runFormatCommand("redo"),
+    cancelAutosave,
+  }), [cancelAutosave, runFormatCommand]);
 
   React.useEffect(() => {
-    window.localStorage.setItem(COMMENTS_STORAGE_KEY, JSON.stringify(comments));
-  }, [comments]);
+    return cancelAutosave;
+  }, [cancelAutosave]);
+
+  React.useEffect(() => {
+    fetch("/api/comments")
+      .then((response) => {
+        if (!response.ok) throw new Error("Comments database is not available");
+        return response.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data.comments)) {
+          setComments(data.comments);
+          setIsDatabaseBacked(true);
+        }
+      })
+      .catch(() => {
+        setIsDatabaseBacked(false);
+      });
+  }, []);
+
+  React.useEffect(() => {
+    if (!isDatabaseBacked) {
+      window.localStorage.setItem(COMMENTS_STORAGE_KEY, JSON.stringify(comments));
+    }
+  }, [comments, isDatabaseBacked]);
 
   React.useEffect(() => {
     latestActivePath.current = activeFilePath;
@@ -337,29 +475,50 @@ export function Editor({
     setCommentDraft("");
   };
 
-  const saveComment = () => {
+  const saveComment = async () => {
     if (!pendingSelection || !commentDraft.trim()) return;
 
-    setComments((currentComments) => [
-      ...currentComments,
-      {
-        id: crypto.randomUUID(),
-        note: commentDraft.trim(),
-        quote: pendingSelection.quote,
-        sectionPath: pendingSelection.sectionPath,
-        sectionTitle: pendingSelection.sectionTitle,
-        startOffset: pendingSelection.startOffset,
-        endOffset: pendingSelection.endOffset,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    const nextComment = {
+      id: crypto.randomUUID(),
+      note: commentDraft.trim(),
+      quote: pendingSelection.quote,
+      sectionPath: pendingSelection.sectionPath,
+      sectionTitle: pendingSelection.sectionTitle,
+      startOffset: pendingSelection.startOffset,
+      endOffset: pendingSelection.endOffset,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (isDatabaseBacked) {
+      const response = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextComment),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setComments((currentComments) => [...currentComments, data.comment]);
+      } else {
+        setComments((currentComments) => [...currentComments, nextComment]);
+      }
+    } else {
+      setComments((currentComments) => [...currentComments, nextComment]);
+    }
+
     setPendingSelection(null);
     setIsComposingComment(false);
     setCommentDraft("");
     window.getSelection()?.removeAllRanges();
   };
 
-  const deleteComment = (commentId: string) => {
+  const deleteComment = async (commentId: string) => {
+    if (isDatabaseBacked) {
+      await fetch(`/api/comments?id=${encodeURIComponent(commentId)}`, {
+        method: "DELETE",
+      });
+    }
+
     setComments((currentComments) =>
       currentComments.filter((comment) => comment.id !== commentId)
     );
@@ -390,6 +549,7 @@ export function Editor({
       <article className="manual-document mx-auto max-w-2xl px-8 py-10 sm:px-12 sm:py-14">
         {sections.map((section, index) => {
           const isActive = section.path === activeFilePath;
+          const readingMinutes = getReadingMinutes(section.html, section.title);
 
           return (
             <section
@@ -403,7 +563,16 @@ export function Editor({
             >
               <div className="mb-5 flex items-start justify-between gap-5">
                 <div>
+                  <p className="mb-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-500">
+                    {readingMinutes} min read
+                  </p>
                   <h1
+                    contentEditable={isEditing}
+                    suppressContentEditableWarning
+                    data-editable-title
+                    onFocus={() => handleSectionFocus(section.path)}
+                    onInput={() => scheduleAutosave(section.path)}
+                    onKeyDown={(event) => handleEditorKeyDown(event, section.path)}
                     className={`text-[1.7rem] font-bold leading-tight tracking-[-0.02em] text-wrap-balance ${
                       isActive
                         ? "text-primary"
@@ -424,6 +593,11 @@ export function Editor({
               </div>
 
               <div
+                contentEditable={isEditing}
+                suppressContentEditableWarning
+                onFocus={() => handleSectionFocus(section.path)}
+                onInput={() => scheduleAutosave(section.path)}
+                onKeyDown={(event) => handleEditorKeyDown(event, section.path)}
                 className="manual-prose"
                 dangerouslySetInnerHTML={{
                   __html: stripDuplicateTitle(section.html, section.title),
@@ -546,6 +720,14 @@ export function Editor({
           text-wrap: pretty;
         }
 
+        [contenteditable="true"] {
+          outline: none;
+        }
+
+        [contenteditable="true"]:focus {
+          outline: none;
+        }
+
         .manual-prose p {
           margin: 0 0 0.65rem;
         }
@@ -647,4 +829,4 @@ export function Editor({
       `}</style>
     </div>
   );
-}
+});

@@ -63,7 +63,7 @@ export function markdownToHtml(md: string): string {
   const lines = html.split("\n");
   let inList = false;
   let listType: "ul" | "ol" | null = null;
-  let resultLines: string[] = [];
+  const resultLines: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -136,62 +136,99 @@ export function markdownToHtml(md: string): string {
   return html;
 }
 
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)));
+}
+
+function stripBrowserEditingMarkup(value: string) {
+  return value
+    .replace(/<\/?(span|font)\b[^>]*>/gi, "")
+    .replace(/<meta\b[^>]*>/gi, "")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+}
+
 export function htmlToMarkdown(html: string): string {
   if (!html) return "";
 
-  let md = html;
+  let md = stripBrowserEditingMarkup(decodeHtmlEntities(html));
+
+  md = md
+    .replace(/\r\n/g, "\n")
+    .replace(/<div\b[^>]*><br\s*\/?><\/div>/gi, "\n")
+    .replace(/<div\b[^>]*>/gi, "\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n");
 
   // Convert headings
-  md = md.replace(/<h1>(.*?)<\/h1>/gi, "# $1\n\n");
-  md = md.replace(/<h2>(.*?)<\/h2>/gi, "## $1\n\n");
-  md = md.replace(/<h3>(.*?)<\/h3>/gi, "### $1\n\n");
+  md = md.replace(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi, "# $1\n\n");
+  md = md.replace(/<h2\b[^>]*>([\s\S]*?)<\/h2>/gi, "## $1\n\n");
+  md = md.replace(/<h3\b[^>]*>([\s\S]*?)<\/h3>/gi, "### $1\n\n");
 
   // Blockquotes
-  md = md.replace(/<blockquote>(.*?)<\/blockquote>/gi, "> $1\n\n");
+  md = md.replace(/<blockquote\b[^>]*>([\s\S]*?)<\/blockquote>/gi, "> $1\n\n");
 
   // HRs
-  md = md.replace(/<hr\s*\/?>/gi, "---\n\n");
+  md = md.replace(/<hr\b[^>]*\/?>/gi, "---\n\n");
 
   // Inline styling
-  md = md.replace(/<strong>(.*?)<\/strong>/gi, "**$1**");
-  md = md.replace(/<b>(.*?)<\/b>/gi, "**$1**");
-  md = md.replace(/<em>(.*?)<\/em>/gi, "*$1*");
-  md = md.replace(/<i>(.*?)<\/i>/gi, "*$1*");
-  md = md.replace(/<s>(.*?)<\/s>/gi, "~~$1~~");
-  md = md.replace(/<strike>(.*?)<\/strike>/gi, "~~$1~~");
-  md = md.replace(/<del>(.*?)<\/del>/gi, "~~$1~~");
+  md = md.replace(/<strong\b[^>]*>([\s\S]*?)<\/strong>/gi, "**$1**");
+  md = md.replace(/<b\b[^>]*>([\s\S]*?)<\/b>/gi, "**$1**");
+  md = md.replace(/<em\b[^>]*>([\s\S]*?)<\/em>/gi, "*$1*");
+  md = md.replace(/<i\b[^>]*>([\s\S]*?)<\/i>/gi, "*$1*");
+  md = md.replace(/<s\b[^>]*>([\s\S]*?)<\/s>/gi, "~~$1~~");
+  md = md.replace(/<strike\b[^>]*>([\s\S]*?)<\/strike>/gi, "~~$1~~");
+  md = md.replace(/<del\b[^>]*>([\s\S]*?)<\/del>/gi, "~~$1~~");
 
   // Links
   md = md.replace(/<a\s+(?:[^>]*?\s+)?href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)");
 
   // Unordered lists
   // Since we might have multiple lists, we can parse them using matches
-  md = md.replace(/<ul>([\s\S]*?)<\/ul>/gi, (match, listContent) => {
+  md = md.replace(/<ul\b[^>]*>([\s\S]*?)<\/ul>/gi, (_match, listContent) => {
     return (
       listContent
-        .replace(/<li>([\s\S]*?)<\/li>/gi, "- $1\n")
+        .replace(/<li\b[^>]*>([\s\S]*?)<\/li>/gi, "- $1\n")
         .trim() + "\n\n"
     );
   });
 
   // Ordered lists
-  md = md.replace(/<ol>([\s\S]*?)<\/ol>/gi, (match, listContent) => {
+  md = md.replace(/<ol\b[^>]*>([\s\S]*?)<\/ol>/gi, (_match, listContent) => {
     let index = 1;
     return (
       listContent
-        .replace(/<li>([\s\S]*?)<\/li>/gi, () => `${index++}. $1\n`)
+        .replace(/<li\b[^>]*>([\s\S]*?)<\/li>/gi, (_itemMatch: string, itemContent: string) => {
+          return `${index++}. ${itemContent}\n`;
+        })
         .trim() + "\n\n"
     );
   });
 
   // Paragraph tags
-  md = md.replace(/<p>(.*?)<\/p>/gi, "$1\n\n");
+  md = md.replace(/<p\b[^>]*>([\s\S]*?)<\/p>/gi, "$1\n\n");
+
+  md = stripBrowserEditingMarkup(md);
+
+  // Strip remaining editor-only markup while preserving table markup for existing docs.
+  md = md.replace(
+    /<(?!\/?(table|thead|tbody|tr|td|th|img|u)\b)[^>]+>/gi,
+    ""
+  );
 
   // Clean empty paragraphs or spacing issues
-  md = md.replace(/\n{3,}/g, "\n\n");
-
-  // Strip final tags but preserve tables
-  // md = md.replace(/<(?!table|\/table|thead|\/thead|tbody|\/tbody|tr|\/tr|td|\/td|th|\/th|img|u|\/u)[^>]+>/g, "");
+  md = md
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n");
 
   return md.trim();
 }
